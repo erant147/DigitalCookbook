@@ -1,45 +1,33 @@
 ﻿using System.Threading.Tasks;
 using OrchardCore.ContentManagement.Display.ContentDisplay;
-using OrchardCore.DisplayManagement.ModelBinding;
+using OrchardCore.DisplayManagement.Handlers;
 using OrchardCore.DisplayManagement.Views;
 using DigitalCookbook.Module.Models;
+using OrchardCore.ContentManagement.Display.Models;
 
-namespace DigitalCookbook.Module.Drivers;
-
-public class NutritionPartDisplayDriver : ContentPartDisplayDriver<NutritionPart>
+namespace DigitalCookbook.Module.Drivers
 {
-    // This tells Orchard to show the "Summary" or "Detail" view (Display mode)
-    public override IDisplayResult Display(NutritionPart part)
+    public class NutritionPartDisplayDriver : ContentPartDisplayDriver<NutritionPart>
     {
-        // Use Initialize<NutritionPart> instead of the missing ViewModel
-        return Initialize<NutritionPart>("NutritionPart", model =>
+        public override IDisplayResult Edit(NutritionPart part, BuildPartEditorContext context)
         {
-            model.Calories = part.Calories;
-            model.AllergenInfo = part.AllergenInfo;
-            model.ContentItem = part.ContentItem;
-        })
-        .Location("Detail", "Content:10")
-        .Location("Summary", "Content:10");
-    }
+            return View("NutritionPart_Edit", part).Location("Content:1");
+        }
 
-    // This tells Orchard to show the editor boxes (Edit mode)
-    public override IDisplayResult Edit(NutritionPart part)
-    {
-        return Initialize<NutritionPart>("NutritionPart_Edit", model =>
+        public override IDisplayResult Display(NutritionPart part, BuildPartDisplayContext context)
         {
-            model.Calories = part.Calories;
-            model.AllergenInfo = part.AllergenInfo;
-        })
-        .Location("Content:10");
-    }
+            if (context.DisplayType == "SummaryAdmin")
+            {
+                return null;
+            }
 
-    // This saves the data from the text boxes back to the database
-    public override async Task<IDisplayResult> UpdateAsync(NutritionPart part, IUpdateModel updater)
-    {
-        // We use "NutritionPart" here because that is the name of the Part itself.
-        // Orchard uses this name to find the values in the web form.
-        await updater.TryUpdateModelAsync(part, "NutritionPart", t => t.Calories, t => t.AllergenInfo);
+            return View("NutritionPart_Display", part).Location("Content:5");
+        }
 
-        return Edit(part);
+        public override async Task<IDisplayResult> UpdateAsync(NutritionPart part, UpdatePartEditorContext context)
+        {
+            await context.Updater.TryUpdateModelAsync(part, Prefix, t => t.Calories, t => t.AllergenInfo);
+            return Edit(part, context);
+        }
     }
 }

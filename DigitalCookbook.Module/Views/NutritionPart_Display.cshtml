@@ -1,0 +1,12 @@
+﻿@inject OrchardCore.IOrchardHelper Orchard
+@model OrchardCore.DisplayManagement.Views.ShapeViewModel<DigitalCookbook.Module.Models.NutritionPart>
+
+    @if (Model.Value.Calories > 0)
+    {
+        <span class="badge bg-info">🔥 @Model.Value.Calories kcal</span>
+    }
+
+    @if (!string.IsNullOrEmpty(Model.Value.AllergenInfo) && Model.Value.AllergenInfo != "None")
+    {
+        <span class="badge bg-warning text-dark">⚠️ @Model.Value.AllergenInfo</span>
+    }

@@ -12,9 +12,15 @@ namespace DigitalCookbook.Module
     {
         public override void ConfigureServices(IServiceCollection services)
         {
+            // Register NutritionPart
             services.AddContentPart<NutritionPart>()
                     .UseDisplayDriver<NutritionPartDisplayDriver>();
 
+            // Register RecipePart
+            services.AddContentPart<RecipePart>()
+                    .UseDisplayDriver<RecipePartDisplayDriver>();
+
+            // Register Migration
             services.AddDataMigration<Migrations>();
         }
     }

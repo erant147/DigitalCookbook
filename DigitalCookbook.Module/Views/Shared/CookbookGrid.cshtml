@@ -1,0 +1,410 @@
+﻿@using OrchardCore.ContentManagement
+@inject OrchardCore.ContentManagement.IContentManager ContentManager
+@model IEnumerable<OrchardCore.ContentManagement.ContentItem>
+
+@{
+    var selectedAllergen = Context.Request.Query["allergen"].ToString();
+    var searchTerm = Context.Request.Query["search"].ToString();
+    var allAllergens = new List<string> { "Nuts", "Dairy", "Gluten", "Soy", "Eggs", "Shellfish" };
+}
+
+<style>
+    .filter-bar {
+        margin-bottom: 20px;
+    }
+
+    .filter-btn {
+        margin: 5px;
+        padding: 8px 16px;
+        border-radius: 20px;
+        text-decoration: none;
+        display: inline-block;
+    }
+
+    .filter-btn-active {
+        background-color: #28a745;
+        color: white;
+    }
+
+    .filter-btn-inactive {
+        background-color: #6c757d;
+        color: white;
+    }
+
+    .recipe-card {
+        transition: transform 0.2s;
+        height: 100%;
+    }
+
+        .recipe-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+
+    .card-img-top {
+        height: 200px;
+        object-fit: cover;
+        width: 100%;
+    }
+
+    .no-image {
+        height: 200px;
+        background-color: #6c757d;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+    }
+
+    .search-box {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+    }
+
+    .search-input {
+        flex: 1;
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        font-size: 16px;
+    }
+
+    .search-btn {
+        background: #28a745;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 5px;
+        cursor: pointer;
+    }
+
+        .search-btn:hover {
+            background: #218838;
+        }
+
+    .favorites-link {
+        background: #dc3545;
+        color: white;
+        padding: 10px 20px;
+        border-radius: 5px;
+        text-decoration: none;
+        display: inline-block;
+    }
+
+        .favorites-link:hover {
+            background: #c82333;
+        }
+
+    .action-buttons {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+    }
+
+    .btn-secondary {
+        background: #6c757d;
+        color: white;
+        padding: 10px 20px;
+        border-radius: 5px;
+        text-decoration: none;
+        display: inline-block;
+    }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+    .btn-primary {
+        background: #007bff;
+        color: white;
+        padding: 8px 16px;
+        border-radius: 5px;
+        text-decoration: none;
+        display: inline-block;
+        margin-right: 5px;
+    }
+
+        .btn-primary:hover {
+            background: #0069d9;
+        }
+
+    .btn-outline-danger {
+        background: transparent;
+        color: #dc3545;
+        border: 1px solid #dc3545;
+        padding: 8px 16px;
+        border-radius: 5px;
+        cursor: pointer;
+    }
+
+        .btn-outline-danger:hover {
+            background: #dc3545;
+            color: white;
+        }
+
+    .mt-4 {
+        margin-top: 1.5rem;
+    }
+
+    .mb-4 {
+        margin-bottom: 1.5rem;
+    }
+
+    .text-muted {
+        color: #6c757d;
+    }
+
+    .small {
+        font-size: 0.875rem;
+    }
+
+    .alert {
+        padding: 1rem;
+        border-radius: 0.25rem;
+    }
+
+    .alert-info {
+        background-color: #d1ecf1;
+        border-color: #bee5eb;
+        color: #0c5460;
+    }
+
+    .text-center {
+        text-align: center;
+    }
+</style>
+
+<div class="container mt-4">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+        <h1>📚 Digital Cookbook</h1>
+
+        <!-- Favorites Button -->
+        <div class="action-buttons">
+            <a href="/recipes/favorites" class="favorites-link">
+                ❤️ My Favorite Recipes
+            </a>
+        </div>
+    </div>
+
+    <!-- Search Bar -->
+    <div class="card" style="margin-bottom: 1rem;">
+        <div class="card-body">
+            <form method="get" action="/recipes">
+                <div class="search-box">
+                    <input type="text" name="search" class="search-input" placeholder="🔍 Search recipes by name or ingredient..." value="@searchTerm" />
+                    <button type="submit" class="search-btn">Search</button>
+                    @if (!string.IsNullOrEmpty(searchTerm))
+                    {
+                        <a href="/recipes" class="btn-secondary" style="padding: 10px 20px; text-decoration: none;">Clear</a>
+                    }
+                </div>
+                @if (!string.IsNullOrEmpty(selectedAllergen))
+                {
+                    <input type="hidden" name="allergen" value="@selectedAllergen" />
+                }
+            </form>
+        </div>
+    </div>
+
+    <!-- Filter Bar -->
+    <div class="filter-bar">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">🔍 Filter by Allergen (shows allergen-free recipes)</h5>
+                <div>
+                    <a href="/recipes@(string.IsNullOrEmpty(searchTerm) ? "" : "?search=" + searchTerm)" class="filter-btn @(string.IsNullOrEmpty(selectedAllergen) ? "filter-btn-active" : "filter-btn-inactive")">All Recipes</a>
+                    @foreach (var allergen in allAllergens)
+                    {
+                        <a href="/recipes?allergen=@allergen@(string.IsNullOrEmpty(searchTerm) ? "" : "&search=" + searchTerm)" class="filter-btn @(selectedAllergen == allergen ? "filter-btn-active" : "filter-btn-inactive")">@allergen-Free</a>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search Results Info -->
+    @if (!string.IsNullOrEmpty(searchTerm))
+    {
+        <div class="alert alert-info">
+            <strong>🔍 Searching for: "@searchTerm"</strong>
+        </div>
+    }
+
+    <!-- Recipes Grid -->
+    <div class="row mt-4">
+        @{
+            var filteredBySearch = new List<ContentItem>();
+
+            foreach (var recipe in Model)
+            {
+                // Search filtering
+                if (!string.IsNullOrEmpty(searchTerm))
+                {
+                    bool matchesSearch = false;
+
+                    // Check recipe name
+                    if (recipe.DisplayText != null && recipe.DisplayText.IndexOf(searchTerm, StringComparison.OrdinalIgnoreCase) >= 0)
+                    {
+                        matchesSearch = true;
+                    }
+
+                    // Check ingredients
+                    if (!matchesSearch)
+                    {
+                        var recipePart = recipe.Content.Recipe;
+                        var ingredientIds = recipePart.IngredientsList?.ContentItemIds ?? new string[] { };
+                        foreach (var ingredientId in ingredientIds)
+                        {
+                            var ingredient = await ContentManager.GetAsync(ingredientId.ToString());
+                            if (ingredient != null && ingredient.DisplayText != null && ingredient.DisplayText.IndexOf(searchTerm, StringComparison.OrdinalIgnoreCase) >= 0)
+                            {
+                                matchesSearch = true;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (!matchesSearch) continue;
+                }
+
+                filteredBySearch.Add(recipe);
+            }
+
+            foreach (var recipe in filteredBySearch)
+            {
+                var recipePart = recipe.Content.Recipe;
+                var ingredientIds = recipePart.IngredientsList?.ContentItemIds ?? new string[] { };
+                var containsAllergen = false;
+                var recipeAllergens = new List<string>();
+                var matchingIngredients = new List<string>();
+
+                foreach (var ingredientId in ingredientIds)
+                {
+                    var ingredient = await ContentManager.GetAsync(ingredientId.ToString());
+                    if (ingredient != null)
+                    {
+                        // Track for search highlighting
+                        if (!string.IsNullOrEmpty(searchTerm) && ingredient.DisplayText != null && ingredient.DisplayText.IndexOf(searchTerm, StringComparison.OrdinalIgnoreCase) >= 0)
+                        {
+                            matchingIngredients.Add(ingredient.DisplayText);
+                        }
+
+                        if (ingredient?.Content.NutritionPart?.AllergenInfo != null)
+                        {
+                            try
+                            {
+                                var allergenInfo = ingredient.Content.NutritionPart.AllergenInfo.ToString();
+                                if (!string.IsNullOrEmpty(allergenInfo) && allergenInfo != "None")
+                                {
+                                    recipeAllergens.Add(allergenInfo);
+                                    if (allergenInfo == selectedAllergen) containsAllergen = true;
+                                }
+                            }
+                            catch { }
+                        }
+                    }
+                }
+
+                if (!string.IsNullOrEmpty(selectedAllergen) && containsAllergen) { continue; }
+
+                var totalCalories = 0;
+                foreach (var ingredientId in ingredientIds)
+                {
+                    var ingredient = await ContentManager.GetAsync(ingredientId.ToString());
+                    if (ingredient?.Content.NutritionPart?.Calories != null)
+                    {
+                        try { totalCalories += Convert.ToInt32(ingredient.Content.NutritionPart.Calories); } catch { }
+                    }
+                }
+
+                // Get recipe photo with full URL
+                string photoPath = null;
+                try
+                {
+                    var recipePhotos = recipe.Content.Recipe.RecipePhotos;
+                    if (recipePhotos != null && recipePhotos.Paths != null && recipePhotos.Paths.Count > 0)
+                    {
+                        var rawPath = recipePhotos.Paths[0]?.ToString();
+                        if (!string.IsNullOrEmpty(rawPath)) photoPath = "/media/" + rawPath;
+                    }
+                }
+                catch { }
+
+                <div class="col-md-4 mb-4">
+                    <div class="card recipe-card">
+                        @if (!string.IsNullOrEmpty(photoPath))
+                        {
+                            <img src="@photoPath" class="card-img-top" alt="@recipe.DisplayText" />
+                        }
+                        else
+                        {
+                            <div class="no-image">🍽️ No Image</div>
+                        }
+                        <div class="card-body">
+                            <h5 class="card-title">@recipe.DisplayText</h5>
+                            @if (!string.IsNullOrEmpty(searchTerm) && matchingIngredients.Any())
+                            {
+                                <p class="text-muted small">🔍 Matches: @string.Join(", ", matchingIngredients.Distinct())</p>
+                            }
+                            @if (totalCalories > 0)
+                            {
+                                <p><span style="background: #17a2b8; color: white; padding: 3px 8px; border-radius: 12px;">🔥 @totalCalories kcal</span></p>
+                            }
+                            @if (recipeAllergens.Any())
+                            {
+                                <p>
+                                    @foreach (var allergen in recipeAllergens.Distinct())
+                                    {
+                                        <span style="background: #ffc107; padding: 3px 8px; border-radius: 12px; margin-right: 5px;">⚠️ @allergen</span>
+                                    }
+                                </p>
+                            }
+                            <a href="/Contents/ContentItems/@recipe.ContentItemId" class="btn-primary" style="text-decoration: none;">View Recipe</a>
+                            <button onclick="toggleFavorite('@recipe.ContentItemId', this)" class="btn-outline-danger">❤️ Favorite</button>
+                        </div>
+                    </div>
+                </div>
+            }
+        }
+    </div>
+
+    @if (!filteredBySearch.Any())
+    {
+        <div class="row">
+            <div class="col-12">
+                <div class="alert alert-info text-center">
+                    <h4>No recipes found</h4>
+                    <p>Try a different search term or clear the filter.</p>
+                    <a href="/recipes" class="btn-primary" style="text-decoration: none;">Clear All Filters</a>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+<script>
+    function toggleFavorite(contentItemId, button) {
+        fetch('/recipes/favorite/' + contentItemId, { method: 'POST' })
+            .then(function(response) {
+                return response.json();
+            })
+            .then(function(data) {
+                if (data.success) {
+                    if (data.isFavorite) {
+                        alert('✅ Added to favorites!');
+                        button.style.backgroundColor = '#dc3545';
+                        button.style.color = 'white';
+                    } else {
+                        alert('❌ Removed from favorites!');
+                        button.style.backgroundColor = 'transparent';
+                        button.style.color = '#dc3545';
+                    }
+                    // Refresh the page if on favorites page
+                    if (window.location.pathname === '/recipes/favorites') {
+                        location.reload();
+                    }
+                }
+            });
+    }
+</script>

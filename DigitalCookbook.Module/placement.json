@@ -1,15 +1,12 @@
 {
-  "NutritionPart": [
+  "NutritionPart_Edit": [
     {
-      "displayType": "Detail",
-      "pos": "Content:10"
-    },
-    {
-      "displayType": "Summary",
-      "pos": "Content:10"
+      "place": "Content:1"
     }
   ],
-  "NutritionPart_Edit": [
-    { "pos": "Content:10" }
+  "NutritionPart_SummaryAdmin": [
+    {
+      "place": "Content:5"
+    }
   ]
 }

@@ -1,0 +1,233 @@
+﻿@using OrchardCore.ContentManagement
+@inject OrchardCore.ContentManagement.IContentManager ContentManager
+@model dynamic
+
+@{
+    var recipe = Model.ContentItem;
+    var recipePart = recipe.Content.Recipe;
+    var ingredientIds = recipePart.IngredientsList?.ContentItemIds ?? new string[] { };
+    var totalCalories = 0;
+    var allergens = new List<string>();
+}
+
+<style>
+    @@media print {
+        .no-print {
+            display: none !important;
+        }
+
+        body {
+            font-size: 12pt;
+            color: black;
+            background: white;
+        }
+
+        .recipe-summary {
+            border: 1px solid #ccc !important;
+            background: #f9f9f9 !important;
+        }
+    }
+
+    .recipe-container {
+        max-width: 900px;
+        margin: 0 auto;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+
+    .recipe-image {
+        margin: 20px 0;
+        text-align: center;
+    }
+
+        .recipe-image img {
+            max-width: 100%;
+            max-height: 400px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+    .btn-print {
+        background: #28a745;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 5px;
+        cursor: pointer;
+        margin-right: 10px;
+    }
+
+        .btn-print:hover {
+            background: #218838;
+        }
+
+    .servings-box {
+        margin: 15px 0;
+        padding: 15px;
+        background: #f0f0f0;
+        border-radius: 8px;
+    }
+
+    .servings-input {
+        width: 80px;
+        margin-left: 10px;
+        padding: 5px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+    }
+
+    .summary-box {
+        border: 3px solid green;
+        padding: 15px;
+        margin: 15px 0;
+        background: #d4edda;
+        border-radius: 8px;
+    }
+
+    .cooking-steps {
+        background: #f8f9fa;
+        padding: 15px;
+        border-radius: 8px;
+    }
+</style>
+
+<div class="recipe-container">
+    <!-- Debug Box (will not print) -->
+    <div class="no-print" style="background: black; color: white; padding: 20px; margin: 20px 0; border: 5px solid red;">
+        <h1>🔴 RECIPE TEMPLATE IS WORKING!</h1>
+        <p>Recipe: @recipe.DisplayText</p>
+    </div>
+
+    <!-- Print Button -->
+    <div class="no-print">
+        <button onclick="window.print()" class="btn-print">
+            🖨️ Print Recipe
+        </button>
+    </div>
+
+    <!-- Recipe Title -->
+    <h1>@recipe.DisplayText</h1>
+
+    <!-- Recipe Photos - FIXED with /media/ prefix -->
+    @{
+        string photoPath = null;
+        try
+        {
+            var recipePhotos = recipe.Content.Recipe.RecipePhotos;
+            if (recipePhotos != null)
+            {
+                if (recipePhotos.Paths != null && recipePhotos.Paths.Count > 0)
+                {
+                    var rawPath = recipePhotos.Paths[0]?.ToString();
+                    if (!string.IsNullOrEmpty(rawPath))
+                    {
+                        photoPath = "/media/" + rawPath;
+                    }
+                }
+            }
+        }
+        catch { }
+    }
+
+    @if (!string.IsNullOrEmpty(photoPath))
+    {
+        <div class="recipe-image">
+            <img src="@photoPath" alt="@recipe.DisplayText" />
+        </div>
+    }
+
+    <!-- Portion Calculator -->
+    <div class="servings-box no-print">
+        <label for="servings"><strong>🍽️ Number of Servings:</strong></label>
+        <input type="number" id="servings" class="servings-input" value="1" min="1" step="1">
+        <span id="caloriesPerServing"></span>
+    </div>
+
+    <!-- Ingredients List -->
+    <h3>📋 Ingredients:</h3>
+    <ul>
+        @foreach (var ingredientId in ingredientIds)
+        {
+            var ingredient = await ContentManager.GetAsync(ingredientId.ToString());
+            if (ingredient != null)
+            {
+                var nutrition = ingredient.Content.NutritionPart;
+
+                int calories = 0;
+                if (nutrition?.Calories != null)
+                {
+                    try
+                    {
+                        calories = Convert.ToInt32(nutrition.Calories);
+                    }
+                    catch
+                    {
+                        calories = 0;
+                    }
+                }
+                totalCalories += calories;
+
+                string allergenInfo = null;
+                if (nutrition?.AllergenInfo != null)
+                {
+                    try
+                    {
+                        allergenInfo = nutrition.AllergenInfo.ToString();
+                    }
+                    catch
+                    {
+                        allergenInfo = null;
+                    }
+                }
+
+                if (!string.IsNullOrEmpty(allergenInfo) && allergenInfo != "None" && !allergens.Contains(allergenInfo))
+                {
+                    allergens.Add(allergenInfo);
+                }
+                <li>
+                    @ingredient.DisplayText
+                    @if (calories > 0)
+                    {
+                        <span style="color: green;">(@calories kcal)</span>
+                    }
+                </li>
+            }
+        }
+    </ul>
+
+    <!-- Recipe Summary -->
+    <div class="summary-box">
+        <strong style="font-size: 18px;">📊 Recipe Summary:</strong><br />
+        🔥 <strong>Total Calories:</strong> <span id="totalCaloriesDisplay">@totalCalories</span> kcal<br />
+        @if (allergens.Any())
+        {
+            <span>⚠️ <strong>Contains:</strong> @string.Join(", ", allergens)</span>
+        }
+        else
+        {
+            <span>✅ <strong>Allergens:</strong> None</span>
+        }
+    </div>
+
+    <!-- Cooking Steps -->
+    <h3>📖 Cooking Steps:</h3>
+    <div class="cooking-steps">
+        @Html.Raw(recipe.Content.CookingSteps?.Html ?? "No cooking steps added.")
+    </div>
+</div>
+
+<script>
+    var totalCalories = @totalCalories;
+    var servingsInput = document.getElementById('servings');
+    var caloriesDisplay = document.getElementById('caloriesPerServing');
+
+    function updateCaloriesPerServing() {
+        var servings = parseInt(servingsInput.value) || 1;
+        var perServing = Math.round(totalCalories / servings);
+        caloriesDisplay.innerHTML = '<strong style="color: green;"> = ' + perServing + ' calories per serving</strong>';
+    }
+
+    if (servingsInput) {
+        servingsInput.addEventListener('input', updateCaloriesPerServing);
+        updateCaloriesPerServing();
+    }
+</script>

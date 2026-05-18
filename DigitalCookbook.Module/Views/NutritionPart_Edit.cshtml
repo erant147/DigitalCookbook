@@ -1,0 +1,19 @@
+﻿@model OrchardCore.DisplayManagement.Views.ShapeViewModel<DigitalCookbook.Module.Models.NutritionPart>
+
+    <div class="card my-3 shadow-sm border-light">
+        <div class="card-header bg-dark text-white fw-bold d-flex align-items-center gap-2">
+            <span>🥗</span> Custom Nutrition Specifications
+        </div>
+        <div class="card-body bg-light">
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label fw-semibold text-secondary">🔥 Energy Output (Calories)</label>
+                    <input type="number" name="NutritionPart.Calories" class="form-control" value="@Model.Value.Calories" placeholder="e.g. 150" />
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label fw-semibold text-secondary">⚠️ Critical Allergen Warnings</label>
+                    <input type="text" name="NutritionPart.AllergenInfo" class="form-control" value="@Model.Value.AllergenInfo" placeholder="e.g. Nuts, Dairy, None" />
+                </div>
+            </div>
+        </div>
+    </div>

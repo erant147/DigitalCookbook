@@ -1,7 +1,7 @@
-﻿using OrchardCore.ContentManagement.Metadata;
+﻿using System.Threading.Tasks;
+using OrchardCore.ContentManagement.Metadata;
 using OrchardCore.ContentManagement.Metadata.Settings;
 using OrchardCore.Data.Migration;
-using System.Threading.Tasks;
 
 namespace DigitalCookbook.Module
 {
@@ -16,43 +16,20 @@ namespace DigitalCookbook.Module
 
         public async Task<int> CreateAsync()
         {
-            // 1. Define NutritionPart with Display Settings for the "View" screen
+            // 1. Define NutritionPart
             await _contentDefinitionManager.AlterPartDefinitionAsync("NutritionPart", part => part
                 .WithField("Calories", field => field
                     .OfType("NumericField")
                     .WithDisplayName("Calories")
                     .WithSettings(new { Position = "1" }))
-                .WithField("Protein", field => field
-                    .OfType("NumericField")
-                    .WithDisplayName("Protein")
+                .WithField("AllergenInfo", field => field
+                    .OfType("TextField")
+                    .WithDisplayName("Allergen Info")
                     .WithSettings(new { Position = "2" }))
-                .WithField("Carbohydrates", field => field
-                    .OfType("NumericField")
-                    .WithDisplayName("Carbohydrates")
-                    .WithSettings(new { Position = "3" }))
-                .WithField("Fat", field => field
-                    .OfType("NumericField")
-                    .WithDisplayName("Fat")
-                    .WithSettings(new { Position = "4" }))
             );
 
-            await _contentDefinitionManager.AlterTypeDefinitionAsync("Ingredient", type => type
-                .DisplayedAs("Ingredient")
-                .Creatable().Listable()
-                .WithPart("TitlePart", part => part.WithSettings(new { RenderTitle = true }))
-                .WithPart("NutritionPart")
-            );
-
-            // 2. Build the Recipe Type
-            await BuildRecipeType();
-
-            return 1;
-        }
-
-        private async Task BuildRecipeType()
-        {
-            // 1. Define the Fields on the Part first
-            await _contentDefinitionManager.AlterPartDefinitionAsync("Recipe", part => part
+            // 2. Define RecipePart with its fields
+            await _contentDefinitionManager.AlterPartDefinitionAsync("RecipePart", part => part
                 .WithField("RecipePhotos", field => field
                     .OfType("MediaField")
                     .WithDisplayName("Recipe Photos")
@@ -68,32 +45,32 @@ namespace DigitalCookbook.Module
                     }))
             );
 
-            // 2. Then attach that Part to the Type
+            // 3. Define Ingredient Content Type
+            await _contentDefinitionManager.AlterTypeDefinitionAsync("Ingredient", type => type
+                .DisplayedAs("Ingredient")
+                .Creatable()
+                .Listable()
+                .Draftable()
+                .Versionable()
+                .WithPart("TitlePart", part => part.WithPosition("0"))
+                .WithPart("NutritionPart", part => part.WithPosition("1"))
+            );
+
+            // 4. Define Recipe Content Type
             await _contentDefinitionManager.AlterTypeDefinitionAsync("Recipe", type => type
                 .DisplayedAs("Recipe")
-                .Creatable().Listable().Draftable().Versionable()
-                .WithPart("TitlePart", part => part.WithPosition("1"))
-                .WithPart("Recipe", part => part.WithPosition("2"))
+                .Creatable()
+                .Listable()
+                .Draftable()
+                .Versionable()
+                .WithPart("TitlePart", part => part.WithPosition("0"))
+                .WithPart("RecipePart", part => part.WithPosition("1"))
                 .WithPart("HtmlBodyPart", part => part
                     .WithDisplayName("Cooking Steps")
-                    .WithPosition("3"))
+                    .WithPosition("2"))
             );
-        }
 
-        // Incrementing versions to force Orchard to run the new logic
-        public async Task<int> UpdateFrom1Async() { await CreateAsync(); return 2; }
-        public async Task<int> UpdateFrom2Async() { await CreateAsync(); return 3; }
-        public async Task<int> UpdateFrom3Async() { await CreateAsync(); return 4; }
-        public async Task<int> UpdateFrom4Async() { await CreateAsync(); return 5; }
-        public async Task<int> UpdateFrom5Async() { await CreateAsync(); return 6; }
-        public async Task<int> UpdateFrom6Async() { await CreateAsync(); return 7; }
-        public async Task<int> UpdateFrom7Async() { await CreateAsync(); return 8; }
-        public async Task<int> UpdateFrom8Async() { await CreateAsync(); return 9; }
-        public async Task<int> UpdateFrom9Async()
-        {
-            await BuildRecipeType();
-            await CreateAsync(); // This ensures the NutritionPart settings also update
-            return 10;
+            return 1;
         }
     }
 }

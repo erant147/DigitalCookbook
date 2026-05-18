@@ -6,5 +6,11 @@
     Website = "https://github.com/your-repo",
     Version = "1.0.0",
     Description = "Custom ingredients and recipe logic for the Digital Cookbook.",
-    Category = "Content Management"
+    Category = "Content Management",
+    Dependencies = new[] {
+        "OrchardCore.Contents",
+        "OrchardCore.ContentTypes",
+        "OrchardCore.Liquid",
+        "OrchardCore.Html"
+    }
 )]
